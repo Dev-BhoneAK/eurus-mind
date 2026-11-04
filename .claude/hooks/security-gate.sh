@@ -5,8 +5,9 @@
 #   security-gate.sh pre-commit   Git pre-commit hook (.githooks/pre-commit). Blocks the commit if any
 #                                 file it changes differs from what the recorded pass reviewed.
 #   security-gate.sh              Claude Code PreToolUse hook (stdin = hook JSON). Blocks `git commit`
-#                                 unless the recorded pass matches the current state exactly, and
-#                                 blocks direct writes to the pass marker.
+#                                 unless the recorded pass matches the current state exactly, blocks
+#                                 commands that would skip or disable the git hook, and blocks direct
+#                                 writes to the pass marker or anything inside .git/.
 set -u
 
 MARKER_NAME=security-gate-pass
@@ -65,30 +66,56 @@ if [ "${1:-}" = "pre-commit" ]; then
   exit 1
 fi
 
+block() { echo "Blocked by the security gate: $1" >&2; exit 2; }
+
 INPUT=$(cat)
+TOOL=""
 if command -v jq >/dev/null 2>&1; then
+  TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty')
   TARGET=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // .tool_input.file_path // empty')
 else
   TARGET=$INPUT
 fi
+LOWER=$(printf '%s' "$TARGET" | tr '[:upper:]' '[:lower:]')
 
 case "$TARGET" in
-  *"$MARKER_NAME"*)
-    echo "Blocked: the security-gate pass marker is written only by 'security-gate.sh record' at the end of a passing security-gate review." >&2
-    exit 2 ;;
+  *"$MARKER_NAME"*) block "the pass marker is written only by 'security-gate.sh record' at the end of a passing security-gate review." ;;
 esac
 
-# `git commit` anywhere in the command, including after global options such as `git -C dir commit`.
-printf '%s\n' "$TARGET" \
-  | grep -Eq '(^|[^[:alnum:]_.-])git([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+commit([[:space:]]|$)' \
+if [ "$TOOL" = "Edit" ] || [ "$TOOL" = "Write" ]; then
+  case "$LOWER" in
+    .git/*|*/.git/*) block "files inside .git/ are not edited directly; use git commands." ;;
+  esac
+  exit 0
+fi
+
+# Commands that would skip or disable the git pre-commit hook. A user who intends this runs it themselves.
+case "$LOWER" in
+  *--no-verify*) block "--no-verify skips the git security hook." ;;
+esac
+HOOKSPATH_WRITES=$(printf '%s' "$LOWER" | sed -E 's/(--get[a-z-]*|[[:space:]]get)[[:space:]]+core\.hookspath//g')
+case "$HOOKSPATH_WRITES" in
+  *core.hookspath*) block "changing core.hooksPath disables the git security hook." ;;
+esac
+case "$LOWER" in
+  *alias.*commit*|*commit*alias.*) block "an ad-hoc git alias for commit would hide the commit from the security gate." ;;
+esac
+
+# `git commit`, or a saved alias that expands to commit, after any global options such as `git -C dir`.
+COMMIT_WORDS=commit
+for a in $(git config --get-regexp '^alias\.' 2>/dev/null | awk 'tolower($0) ~ /commit/ { sub(/^alias\./, "", $1); print tolower($1) }'); do
+  COMMIT_WORDS="$COMMIT_WORDS|$a"
+done
+printf '%s\n' "$LOWER" \
+  | grep -Eq "(^|[^[:alnum:]_.-])git([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+($COMMIT_WORDS)([[:space:]]|\$)" \
   || exit 0
+
+printf '%s\n' "$TARGET" | grep -Eq '(^|[[:space:]])-[a-zA-Z]*n[a-zA-Z]*([[:space:]]|$)' \
+  && block "-n on a commit is --no-verify and skips the git security hook."
 
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
-S=$(state) || {
-  echo "Blocked: the security gate could not fingerprint the working tree (unresolved merge?). Resolve it, then run the security-gate skill." >&2
-  exit 2
-}
+S=$(state) || block "could not fingerprint the working tree (unresolved merge?). Resolve it, then run the security-gate skill."
 
 EMPTY_TREE=$(git hash-object -t tree /dev/null)
 HEAD_TREE=$(git rev-parse -q --verify 'HEAD^{tree}' 2>/dev/null || echo "$EMPTY_TREE")
@@ -97,9 +124,6 @@ HEAD_TREE=$(git rev-parse -q --verify 'HEAD^{tree}' 2>/dev/null || echo "$EMPTY_
 MARKER=$(git rev-parse --git-path "$MARKER_NAME")
 [ -f "$MARKER" ] && [ "$(cat "$MARKER")" = "$S" ] && exit 0
 
-cat >&2 <<'EOF'
-Blocked by the security gate: there is no passing security review for the current changes.
+block "there is no passing security review for the current changes.
 Run the security-gate skill (/security-gate), fix every Critical or High finding, and commit only after it records a pass.
-Any edit or `git add` after the pass needs a new review. Run the commit as its own command, not chained after edits.
-EOF
-exit 2
+Any edit or \`git add\` after the pass needs a new review. Run the commit as its own command, not chained after edits."

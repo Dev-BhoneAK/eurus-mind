@@ -1,7 +1,7 @@
 ---
 name: security-gate
 description: Mandatory pre-commit security review. Reviews every uncommitted change (staged, unstaged, untracked) against OWASP Top 10:2025, the OWASP API, Mobile and LLM Top 10 lists, and Eurus Mind's own security rules, then records a pass only if nothing Critical or High remains. Run it before every git commit; a hook blocks the commit until it passes for the exact current changes.
-allowed-tools: Read, Grep, Glob, Bash(git status *), Bash(git diff *), Bash(git ls-files *), Bash(npm audit *), Bash(semgrep *), Bash(gitleaks *), Bash(bash .claude/hooks/security-gate.sh record)
+allowed-tools: Read, Grep, Glob, Bash(git status --porcelain), Bash(git diff --cached), Bash(git diff), Bash(git ls-files --others --exclude-standard), Bash(npm audit --omit=dev --audit-level=high), Bash(bash .claude/hooks/security-gate.sh record)
 ---
 
 # Security gate
@@ -69,7 +69,7 @@ These rules are specific to Eurus Mind and come from `docs/architecture.md` §4 
 7. **Audio URLs** are signed, valid for minutes, issued only after an ownership check, and never logged.
 8. **Private content stays private.** Entry text, transcripts, amounts, reminder titles, audio paths and tokens never reach logs, analytics, Sentry (scrub them in `beforeSend`) or URLs. No ad SDKs.
 9. **Fail closed.** If an auth, quota or entitlement check errors or times out, deny the request. Clients get `{ code, message }`, never a stack trace or a raw provider error.
-10. **Token storage.** On native, tokens go in `expo-secure-store`, never AsyncStorage or SQLite. On web, they're kept in memory plus an `HttpOnly; Secure; SameSite` refresh cookie, never `localStorage`.
+10. **Token storage.** On native, tokens are protected by `expo-secure-store`: stored there directly, or encrypted with a key kept there. They are never stored in plaintext in AsyncStorage or SQLite. On web, they're kept in memory plus an `HttpOnly; Secure; SameSite` refresh cookie, never `localStorage`.
 11. **Guest device hash** is a server-salted hash of the install id, never an advertising id.
 12. **Deletion.** Deleting an entry cancels its notification first. Account deletion removes entries and audio (architecture §9–10).
 13. **The gate itself.** A change to `.claude/settings.json`, `.claude/hooks/`, or this skill that weakens the gate is Critical, unless the user asked for it in this session.

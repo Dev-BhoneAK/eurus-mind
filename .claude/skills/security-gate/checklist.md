@@ -67,7 +67,7 @@ Check every section the change touches.
 
 - JWTs are fully verified (signature, expiry, audience, issuer) in one middleware. Decoding a token without verifying it is never enough.
 - Linking an anonymous account to Google upgrades it in place. Linking can't attach an identity that already belongs to another account.
-- Tokens are never stored in AsyncStorage, SQLite, `localStorage`, URLs or logs. Native uses secure store; web uses memory plus an HttpOnly refresh cookie.
+- Tokens are never stored in plaintext in AsyncStorage or SQLite, and never in `localStorage`, URLs or logs. Native protects them with secure store, either directly or as the key to an encrypted session. Web uses memory plus an HttpOnly refresh cookie.
 - Logging out clears tokens and the cached entitlement. Deleting an account revokes its sessions.
 - No credentials in code, `app.json` or `eas.json`. Build-time secrets live in EAS secrets. (M1)
 

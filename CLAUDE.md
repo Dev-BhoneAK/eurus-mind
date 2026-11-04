@@ -50,6 +50,7 @@ Match it against `docs/prd.md` §11. For code changes specifically: typecheck pa
 
 - Before any `git commit`, stage the changes and run the `security-gate` skill. It reviews every uncommitted change (staged, unstaged, untracked) against OWASP Top 10:2025, the OWASP API/Mobile/LLM Top 10 lists, and the project's security rules, and records a pass only when no Critical or High finding remains.
 - `.claude/hooks/security-gate.sh` (a PreToolUse hook) blocks `git commit` unless the recorded pass matches the exact current working-tree state. Any edit or `git add` after the pass needs a new review. Commit in its own command, not chained after edits.
+- The same hook refuses anything that would skip or disable the git hook (`--no-verify`, `-n` on a commit, `core.hooksPath` changes, ad-hoc commit aliases) and any Edit/Write inside `.git/`. If the user really wants one of those, they run it themselves.
 - `.githooks/pre-commit` runs the same check on every commit, including ones made in a terminal or the IDE. It lets `git commit -a` and pathspec commits through only when every committed file matches what was reviewed. Enable it once per clone with `git config core.hooksPath .githooks`.
 - Only the skill runs `security-gate.sh record`, as its final step after a genuine PASS. Never write the pass marker any other way.
 - New security rules go in `.claude/skills/security-gate/SKILL.md` (project rules) or `checklist.md` (general checks).

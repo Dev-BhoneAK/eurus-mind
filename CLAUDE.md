@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-This repo is **documents only** — a PRD, architecture spec, tech-stack list, and a design system, plus four rendered mockups in `design/`. There is no `package.json`, no `src/`, no `supabase/`. Nothing here currently builds, lints, or tests. `.claude/` holds only the security gate so far. Before writing any app code, scaffold per `docs/tech-stack.md` §2–4 (Expo app + Supabase project) and set up the rest of the `.claude/` workflow per `docs/ai-workflow.md` §2–6 (rules, hooks, agents, skills) — that doc contains copy-pasteable file contents for all of it.
+This repo is **documents only** — a PRD, architecture spec, tech-stack list, and a design system, plus four rendered mockups in `design/`. There is no `package.json`, no `src/`, no `supabase/`. Nothing here currently builds, lints, or tests. The Claude workflow is in place: path-scoped rules, hooks, agents and skills in `.claude/`, and the PR review in `.github/workflows/claude-review.yml`. `.mcp.json` waits for the Supabase dev project. Before writing any app code, scaffold per `docs/tech-stack.md` §2–4 (Expo app + Supabase project).
 
 The first thing to build, before any UI or database work, is the **Gemini spike**: record on a phone, upload the file, one Gemini call, print the JSON. See `docs/architecture.md` §6 and `docs/tech-stack.md` §9.
 
@@ -20,7 +20,7 @@ Eurus Mind: voice-first daily record. Expo (React Native) + Supabase, Android fi
 - `docs/architecture.md` — system diagram, stack decisions and why, API contract, SQL schema, AI pipeline contract, quota mechanics, billing/entitlement flow, migration path off Supabase
 - `docs/tech-stack.md` — exact packages, Android manifest permissions, env vars, EAS commands, repo layout, build order
 - `docs/design.md` — the "Lamplight" design system: colour tokens, type scale, component and screen specs. Wins on anything visual.
-- `docs/ai-workflow.md` — the intended `.claude/` setup (rules, hooks, agents, skills, CI). Source of truth if `.claude/` ever drifts from what's described there.
+- `docs/ai-workflow.md` — why the `.claude/` setup (rules, hooks, agents, skills, CI) looks the way it does. The files in `.claude/` are the source of truth.
 
 ## Non-negotiable architecture rules
 

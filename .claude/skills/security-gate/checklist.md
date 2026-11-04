@@ -112,3 +112,52 @@ Check every section the change touches.
 - **M7 Insufficient binary protections.** Anything compiled into the APK or JS bundle can be extracted, including every `EXPO_PUBLIC_*` value. No secret belongs there.
 - **M8 Security misconfiguration.** Deep-link handlers validate their parameters. New URL schemes and intent filters are reviewed.
 - **M9 Insecure data storage.** Audio is stored only in app-private storage (`FileSystem.documentDirectory`) and deleted with its entry. No tokens are kept in SQLite.
+
+## Reference contracts
+
+Copied from `docs/architecture.md` §6–7, which stays out of the repo, so a review in CI or a fresh clone can still check them.
+
+### Quota hold (§7)
+
+`POST /recordings/slot` runs this one statement before any upload URL is issued:
+
+```sql
+insert into usage_daily (user_id, day, recordings_used)
+values ($1, current_date, 1)
+on conflict (user_id, day) do update
+  set recordings_used = usage_daily.recordings_used + 1
+  where usage_daily.recordings_used < $2   -- 3 for free, high ceiling for Pro
+returning recordings_used;
+```
+
+- If no row comes back, the limit is reached: answer `402` with the paywall payload.
+- `$1` is the user id from the verified JWT. `$2` comes from the server's entitlement and config, never from the client.
+- When transcription fails through no fault of the user, refund the unit by decrementing the same row, once. A daily job reconciles cancelled uploads.
+- Guests are keyed by `user_id` and a device hash, so reinstalling doesn't mint a fresh allowance.
+- Each recording is capped at 60 seconds on both client and server. A per-account monthly ceiling triggers an alert.
+
+### Model output contract (§6)
+
+The model returns strict JSON only:
+
+```json
+{
+  "cleaned_text": "string",
+  "tags": ["health", "feelings"],
+  "mood": 3,
+  "expenses": [{ "amount": 60, "currency": "USD", "label": "lunch" }],
+  "reminder": { "title": "Take medicine", "fire_at_local": "2026-11-02T15:00", "repeat": "daily", "confidence": 0.82 }
+}
+```
+
+The server enforces these rules on that output:
+
+1. Tags are validated against the fixed list: `money`, `feelings`, `work`, `health`, `ideas`, `other`. Unknown values are dropped; an empty result falls back to `other`.
+2. At most three tags; the first becomes `lead_tag`.
+3. `fire_at_local` is resolved against the user's timezone on the server, never the model's assumption, and must be in the future. `repeat` is `once`, `daily` or `yearly`.
+4. A reminder with confidence below 0.6 is still shown, but the confirm card opens with the time picker focused. Nothing is scheduled without the user's confirmation.
+5. Amounts without a currency inherit the user's default currency and are flagged in the review screen.
+6. On failure:
+   - A transcription failure keeps the audio and marks the entry `failed` with a retry.
+   - A model failure saves the raw transcript tagged `other`.
+   - Both refund the quota unit.

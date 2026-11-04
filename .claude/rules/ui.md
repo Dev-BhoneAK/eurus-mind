@@ -1,0 +1,11 @@
+---
+paths:
+  - "src/ui/**"
+  - "src/features/**"
+  - "app/**"
+---
+- Import colours, spacing, radius and type from `src/ui/theme.ts`. A literal hex in a component is a bug.
+- Every list and card handles all five states: loading (skeleton), empty, error, offline, quota reached.
+- Touch targets ≥ 44px. Icon-only buttons need accessibilityLabel.
+- Money, times and counts use the tabular-figures style from theme.ts.
+- Fraunces is for titles only; body text is Plus Jakarta Sans at 16px minimum.

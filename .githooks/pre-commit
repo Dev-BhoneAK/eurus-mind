@@ -1,0 +1,2 @@
+#!/bin/sh
+exec bash "$(git rev-parse --show-toplevel)/.claude/hooks/security-gate.sh" pre-commit

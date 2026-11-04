@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p8
+*.p12
+*.pem
+*.key
+
+# Claude Code personal settings
+.claude/settings.local.json
+
+# Dependencies
+node_modules/

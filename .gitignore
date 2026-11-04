@@ -12,6 +12,15 @@
 *.pem
 *.key
 
+# Project documents and design images stay local, out of the repo
+docs/
+design/**/*.png
+design/**/*.jpg
+design/**/*.jpeg
+design/**/*.gif
+design/**/*.webp
+design/**/*.svg
+
 # Claude Code personal settings
 .claude/settings.local.json
 

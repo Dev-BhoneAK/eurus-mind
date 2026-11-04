@@ -14,6 +14,8 @@ Eurus Mind: voice-first daily record. Expo (React Native) + Supabase, Android fi
 
 ## Read before writing code
 
+`docs/` and the images in `design/` are gitignored: they exist only on the owner's machine. In a fresh clone, CI or a cloud session they are missing, and this file plus `.claude/` carry the rules.
+
 - `docs/prd.md` — users, principles, the topics-and-actions content model, V1 feature list, what's explicitly out of scope, definition of done
 - `docs/architecture.md` — system diagram, stack decisions and why, API contract, SQL schema, AI pipeline contract, quota mechanics, billing/entitlement flow, migration path off Supabase
 - `docs/tech-stack.md` — exact packages, Android manifest permissions, env vars, EAS commands, repo layout, build order

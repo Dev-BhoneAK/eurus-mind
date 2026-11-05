@@ -1,7 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
-    "defaultMode": "plan",
     "allow": [
       "Bash(git status *)",
       "Bash(git diff *)",
@@ -10,13 +9,8 @@
       "Bash(npm run typecheck *)",
       "Bash(npm test *)",
       "Read(./docs/**)",
-      "Read(./src/**)"
-    ],
-    "ask": [
-      "Bash(git push *)",
-      "Bash(npx supabase db push *)",
-      "Bash(eas build *)",
-      "Bash(npm install *)"
+      "Read(./src/**)",
+      "Bash(echo \"exit $?\")"
     ],
     "deny": [
       "Read(./.env)",
@@ -28,7 +22,14 @@
       "Bash(rm -rf *)",
       "Bash(npx supabase db reset *)",
       "Bash(eas submit *)"
-    ]
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(npx supabase db push *)",
+      "Bash(eas build *)",
+      "Bash(npm install *)"
+    ],
+    "defaultMode": "plan"
   },
   "hooks": {
     "PreToolUse": [

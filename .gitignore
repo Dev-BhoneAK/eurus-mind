@@ -21,6 +21,10 @@ design/**/*.gif
 design/**/*.webp
 design/**/*.svg
 
+# Spike recordings and results are personal voice and diary content
+spike/clips/
+spike/out/
+
 # Claude Code personal settings
 .claude/settings.local.json
 
